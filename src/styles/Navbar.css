@@ -149,4 +149,23 @@
   .nav-link {
     font-size: 0.9rem;
   }
+}
+
+.loading-indicator {
+  color: var(--primary-color);
+  font-size: 0.9rem;
+  padding: 0.5rem 1rem;
+  animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+  0% {
+    opacity: 0.6;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0.6;
+  }
 } 

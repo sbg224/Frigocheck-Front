@@ -8,11 +8,12 @@ const Profile = () => {
   const [isEditingProfile, setIsEditingProfile] = useState(false);
   const [isChangingPassword, setIsChangingPassword] = useState(false);
   const [profileData, setProfileData] = useState({
-    username: user?.firstname || "",
+    firstname: user?.firstname || "",
+    lastname: user?.lastname || "",
     email: user?.email || "",
   });
   const [passwordData, setPasswordData] = useState({
-    oldPassword: "",
+    Password: "",
     newPassword: "",
     confirmPassword: "",
   });
@@ -53,10 +54,10 @@ const Profile = () => {
       return;
     }
     try {
-      await updatePassword(passwordData.oldPassword, passwordData.newPassword);
+      await updatePassword(passwordData.Password, passwordData.newPassword);
       setIsChangingPassword(false);
       setPasswordData({
-        oldPassword: "",
+        Password: "",
         newPassword: "",
         confirmPassword: "",
       });
@@ -83,12 +84,12 @@ const Profile = () => {
         {isEditingProfile ? (
           <form onSubmit={handleProfileSubmit} className="profile-form">
             <div className="form-group">
-              <label htmlFor="username">Nom d'utilisateur</label>
+              <label htmlFor="firstname">Prénom</label>
               <input
                 type="text"
-                id="username"
-                name="username"
-                value={profileData.username}
+                id="firstname"
+                name="firstname"
+                value={profileData.firstname}
                 onChange={handleProfileChange}
               />
             </div>
@@ -138,12 +139,12 @@ const Profile = () => {
         {isChangingPassword ? (
           <form onSubmit={handlePasswordSubmit} className="password-form">
             <div className="form-group">
-              <label htmlFor="oldPassword">Ancien mot de passe</label>
+              <label htmlFor="Password">Ancien mot de passe</label>
               <input
                 type="password"
-                id="oldPassword"
-                name="oldPassword"
-                value={passwordData.oldPassword}
+                id="Password"
+                name="Password"
+                value={passwordData.Password}
                 onChange={handlePasswordChange}
               />
             </div>
@@ -179,7 +180,7 @@ const Profile = () => {
                 onClick={() => {
                   setIsChangingPassword(false);
                   setPasswordData({
-                    oldPassword: "",
+                    Password: "",
                     newPassword: "",
                     confirmPassword: "",
                   });

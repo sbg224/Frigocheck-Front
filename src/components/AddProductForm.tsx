@@ -1,5 +1,6 @@
-import { useState } from "react";
-import axios from "axios";
+import React, { useState, useEffect } from "react";
+import { useAuth } from "../contexts/AuthContext";
+import axiosInstance from "../utils/axios";
 import { toast } from "react-toastify";
 import "../styles/AddProductForm.css";
 
@@ -11,10 +12,6 @@ interface ProductFormData {
   quantite: number;
 }
 
-interface AddProductFormProps {
-  onProductAdded: () => void;
-}
-
 interface ProductExistsResponse {
   error: string;
   productId: number;
@@ -22,14 +19,41 @@ interface ProductExistsResponse {
   action: string;
 }
 
-const AddProductForm = ({ onProductAdded }: AddProductFormProps) => {
+interface AddProductFormProps {
+  onProductAdded: () => void;
+  onClose: () => void;
+  initialData?: any;
+  isEditing?: boolean;
+}
+
+const AddProductForm: React.FC<AddProductFormProps> = ({
+  onProductAdded,
+  onClose,
+  initialData,
+  isEditing = false,
+}) => {
+  const { user } = useAuth();
   const [formData, setFormData] = useState<ProductFormData>({
-    designation: "",
-    user_id: 3,
+    designation: initialData?.name || "",
+    user_id: user?.id || 0,
     type_id: 5,
     genre_id: 5,
-    quantite: 1,
+    quantite: initialData?.quantity || 1,
   });
+
+  // Mettre à jour l'ID utilisateur lorsque l'utilisateur change
+  useEffect(() => {
+    if (user && user.id) {
+      console.log(
+        "Mise à jour de l'ID utilisateur dans le formulaire:",
+        user.id
+      );
+      setFormData((prev) => ({
+        ...prev,
+        user_id: user.id,
+      }));
+    }
+  }, [user]);
 
   const [isUpdating, setIsUpdating] = useState(false);
   const [existingProduct, setExistingProduct] = useState<{
@@ -41,16 +65,36 @@ const AddProductForm = ({ onProductAdded }: AddProductFormProps) => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Vérifier si l'utilisateur est connecté
+    if (!user) {
+      toast.error("Vous devez être connecté pour ajouter un produit");
+      return;
+    }
+
+    // S'assurer que l'ID utilisateur est correct
+    if (formData.user_id !== user.id) {
+      console.log(
+        "Correction de l'ID utilisateur:",
+        formData.user_id,
+        "->",
+        user.id
+      );
+      formData.user_id = user.id;
+    }
+
     try {
-      const response = await axios.post(
+      console.log("Envoi des données du formulaire:", formData);
+      const response = await axiosInstance.post(
         `http://localhost:3315/api/shopping-list`,
         formData
       );
       if (response.data) {
+        console.log("Réponse du serveur:", response.data);
         // Réinitialiser le formulaire
         setFormData({
           designation: "",
-          user_id: 3,
+          user_id: user.id,
           type_id: 5,
           genre_id: 5,
           quantite: 1,
@@ -65,6 +109,7 @@ const AddProductForm = ({ onProductAdded }: AddProductFormProps) => {
       // Vérifier si l'erreur est due à l'existence du produit
       if (error.response && error.response.status === 409) {
         const errorData = error.response.data as ProductExistsResponse;
+        console.log("Produit existant détecté:", errorData);
         setExistingProduct({
           id: errorData.productId,
           currentQuantity: errorData.currentQuantity,
@@ -82,20 +127,33 @@ const AddProductForm = ({ onProductAdded }: AddProductFormProps) => {
   const handleUpdateQuantity = async () => {
     if (!existingProduct) return;
 
+    // Vérifier si l'utilisateur est connecté
+    if (!user) {
+      toast.error("Vous devez être connecté pour mettre à jour un produit");
+      return;
+    }
+
     try {
+      console.log("Mise à jour de la quantité du produit:", {
+        productId: existingProduct.id,
+        newQuantity,
+        formData,
+      });
+
       // Utiliser la nouvelle route pour mettre à jour la quantité
-      await axios.put(
+      const response = await axiosInstance.put(
         `http://localhost:3315/api/modifi/produit/${existingProduct.id}`,
         {
           quantite: newQuantity,
           // Conserver les autres propriétés du produit existant
           designation: formData.designation,
-          user_id: formData.user_id,
+          user_id: user.id,
           type_id: formData.type_id,
           genre_id: formData.genre_id,
         }
       );
 
+      console.log("Réponse de la mise à jour:", response.data);
       toast.success("Quantité mise à jour avec succès");
       setIsUpdating(false);
       setExistingProduct(null);
@@ -186,9 +244,14 @@ const AddProductForm = ({ onProductAdded }: AddProductFormProps) => {
             />
           </div>
 
-          <button type="submit" className="submit-button">
-            Ajouter à la liste
-          </button>
+          <div className="form-actions">
+            <button type="button" onClick={onClose} className="cancel-button">
+              Annuler
+            </button>
+            <button type="submit" className="submit-button">
+              {isEditing ? "Modifier" : "Ajouter"}
+            </button>
+          </div>
         </form>
       ) : (
         <div className="update-quantity-form">

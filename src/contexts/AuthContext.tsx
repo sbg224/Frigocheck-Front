@@ -1,5 +1,11 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
-import axios from "axios";
+import axiosInstance, {
+  isAuthenticated as checkAuthStatus,
+  fetchUserData,
+  logout as logoutApi,
+  setAuthInfo,
+  clearAuthInfo,
+} from "../utils/axios";
 import { toast } from "react-toastify";
 
 interface User {
@@ -13,6 +19,7 @@ interface User {
 interface AuthContextType {
   user: User | null;
   isAuthenticated: boolean;
+  isLoading: boolean;
   login: (email: string, password: string) => Promise<void>;
   register: (
     firstname: string,
@@ -20,7 +27,7 @@ interface AuthContextType {
     email: string,
     password: string,
     birth_day: string
-  ) => Promise<void>;
+  ) => Promise<boolean>;
   logout: () => Promise<void>;
   updateProfile: (data: Partial<User>) => Promise<void>;
   updatePassword: (oldPassword: string, newPassword: string) => Promise<void>;
@@ -42,68 +49,76 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [authChecked, setAuthChecked] = useState(false);
 
-  const setupAxiosAuth = (token: string | null) => {
-    if (token) {
-      axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
-    } else {
-      delete axios.defaults.headers.common["Authorization"];
-    }
-  };
-
-  const checkAuthStatus = async () => {
-    try {
-      const token = localStorage.getItem("token");
-
-      if (!token) {
-        setIsAuthenticated(false);
-        setUser(null);
-        setupAxiosAuth(null);
-        setIsLoading(false);
-        return;
-      }
-
-      setupAxiosAuth(token);
-
-      const response = await axios.get(
-        "http://localhost:3315/api/user/profile",
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-
-      if (response.data && response.data.user) {
-        setUser(response.data.user);
-        setIsAuthenticated(true);
-      } else {
-        localStorage.removeItem("token");
-        setUser(null);
-        setIsAuthenticated(false);
-        setupAxiosAuth(null);
-      }
-    } catch (error) {
-      console.error(
-        "Erreur lors de la vérification de l'authentification:",
-        error
-      );
-      localStorage.removeItem("token");
-      setUser(null);
-      setIsAuthenticated(false);
-      setupAxiosAuth(null);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
+  // Vérifier l'authentification au chargement de l'application
   useEffect(() => {
-    checkAuthStatus();
-  }, []);
+    const verifyAuth = async () => {
+      // Éviter de vérifier plusieurs fois
+      if (authChecked) return;
+
+      try {
+        console.log("=== VÉRIFICATION DE L'AUTHENTIFICATION ===");
+        setIsLoading(true);
+
+        // Vérifier si l'utilisateur est authentifié
+        const authStatus = await checkAuthStatus();
+        console.log("Statut d'authentification:", authStatus);
+
+        if (authStatus) {
+          try {
+            // Récupérer les données utilisateur
+            const userData = await fetchUserData();
+            if (userData) {
+              console.log("✅ Utilisateur authentifié:", userData);
+              setUser(userData);
+              setIsAuthenticated(true);
+            } else {
+              console.log("❌ Impossible de récupérer les données utilisateur");
+              setUser(null);
+              setIsAuthenticated(false);
+              // Ne pas nettoyer les informations d'authentification ici
+              // clearAuthInfo();
+            }
+          } catch (error) {
+            console.error(
+              "❌ Erreur lors de la récupération des données utilisateur:",
+              error
+            );
+            setUser(null);
+            setIsAuthenticated(false);
+            // Ne pas nettoyer les informations d'authentification ici
+            // clearAuthInfo();
+          }
+        } else {
+          console.log("❌ Utilisateur non authentifié");
+          setUser(null);
+          setIsAuthenticated(false);
+          // Ne pas nettoyer les informations d'authentification ici
+          // clearAuthInfo();
+        }
+      } catch (error) {
+        console.error(
+          "❌ Erreur lors de la vérification de l'authentification:",
+          error
+        );
+        setUser(null);
+        setIsAuthenticated(false);
+        // Ne pas nettoyer les informations d'authentification ici
+        // clearAuthInfo();
+      } finally {
+        setIsLoading(false);
+        setAuthChecked(true);
+      }
+    };
+
+    verifyAuth();
+  }, [authChecked]);
 
   const login = async (email: string, password: string) => {
     try {
-      const response = await axios.post(
+      console.log("=== TENTATIVE DE CONNEXION ===");
+      const response = await axiosInstance.post(
         "http://localhost:3315/api/user/login",
         {
           email,
@@ -111,19 +126,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         }
       );
 
-      const { token, user } = response.data;
-      localStorage.setItem("token", token);
+      const { user, token } = response.data;
+      console.log("Réponse de connexion:", response.data);
 
-      setUser(user);
-      setIsAuthenticated(true);
-
-      setupAxiosAuth(token);
-
-      toast.success("Connexion réussie !");
+      if (user && user.id) {
+        console.log("✅ Connexion réussie");
+        // Stocker les informations d'authentification
+        setAuthInfo(token, user.id.toString());
+        setUser(user);
+        setIsAuthenticated(true);
+        toast.success("Connexion réussie !");
+      } else {
+        throw new Error("Données d'authentification invalides");
+      }
     } catch (error: any) {
-      console.error("Erreur de connexion:", error.response?.data || error);
+      console.error("❌ Erreur de connexion:", error.response?.data || error);
       toast.error(error.response?.data?.message || "Erreur de connexion");
-      throw new Error(error.response?.data?.message || "Erreur de connexion");
+      throw error;
     }
   };
 
@@ -135,46 +154,66 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     birth_day: string
   ) => {
     try {
-      const response = await axios.post("http://localhost:3315/api/user", {
-        firstname,
-        lastname,
-        email,
-        password,
-        birth_day,
-      });
+      console.log("=== TENTATIVE D'INSCRIPTION ===");
+      const response = await axiosInstance.post(
+        "http://localhost:3315/api/user",
+        {
+          firstname,
+          lastname,
+          email,
+          password,
+          birth_day,
+        }
+      );
 
-      const { token, user } = response.data;
-      localStorage.setItem("token", token);
+      console.log("Réponse d'inscription:", response.data);
 
-      setUser(user);
-      setIsAuthenticated(true);
+      // Vérifier si la réponse indique un succès, même sans ID utilisateur
+      if (response.data && response.data.success) {
+        toast.success(
+          "Inscription réussie ! Vous pouvez maintenant vous connecter."
+        );
+        return true;
+      }
 
-      setupAxiosAuth(token);
+      // Si la réponse contient un utilisateur avec un ID, c'est aussi un succès
+      const { user } = response.data;
+      if (user && user.id) {
+        toast.success(
+          "Inscription réussie ! Vous pouvez maintenant vous connecter."
+        );
+        return true;
+      }
 
-      toast.success("Inscription réussie !");
+      // Si nous arrivons ici, c'est que l'inscription a réussi mais la réponse n'est pas dans le format attendu
+      console.log(
+        "Inscription réussie mais format de réponse inattendu:",
+        response.data
+      );
+      toast.success(
+        "Inscription réussie ! Vous pouvez maintenant vous connecter."
+      );
+      return true;
     } catch (error: any) {
       console.error("Erreur d'inscription:", error.response?.data || error);
-      toast.error(error.response?.data?.message || "Erreur d'inscription");
-      throw new Error(error.response?.data?.message || "Erreur d'inscription");
+      toast.error(
+        error.response?.data?.message || "Erreur lors de l'inscription"
+      );
+      throw error;
     }
   };
 
   const logout = async () => {
     try {
-      if (isAuthenticated) {
-        await axios.post("http://localhost:3315/api/user/logout");
-      }
-    } catch (error) {
-      console.error("Erreur lors de la déconnexion:", error);
-    } finally {
-      localStorage.removeItem("token");
-
+      console.log("=== DÉCONNEXION ===");
+      // Nettoyer les informations d'authentification
+      clearAuthInfo();
       setUser(null);
       setIsAuthenticated(false);
-
-      setupAxiosAuth(null);
-
-      toast.success("Déconnexion réussie !");
+      toast.success("Déconnexion réussie");
+    } catch (error) {
+      console.error("❌ Erreur lors de la déconnexion:", error);
+      toast.error("Erreur lors de la déconnexion");
     }
   };
 
@@ -184,18 +223,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         throw new Error("Utilisateur non connecté");
       }
 
-      const response = await axios.put(
+      const response = await axiosInstance.put(
         `http://localhost:3315/api/user/update/${user.id}`,
-        data,
-        {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
-          },
-        }
+        data
       );
 
       setUser({ ...user, ...data });
-
       toast.success("Profil mis à jour avec succès !");
     } catch (error: any) {
       console.error(
@@ -206,29 +239,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         error.response?.data?.message ||
           "Erreur lors de la mise à jour du profil"
       );
-      throw new Error(
-        error.response?.data?.message ||
-          "Erreur lors de la mise à jour du profil"
-      );
+      throw error;
     }
   };
 
-  const updatePassword = async (oldPassword: string, newPassword: string) => {
+  const updatePassword = async (Password: string, newPassword: string) => {
     try {
       if (!user) {
         throw new Error("Utilisateur non connecté");
       }
 
-      await axios.put(
-        "http://localhost:3315/api/user/password",
+      await axiosInstance.put(
+        `http://localhost:3315/api/user/update/${user.id}`,
         {
-          oldPassword,
+          Password,
           newPassword,
-        },
-        {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
-          },
         }
       );
 
@@ -242,16 +267,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         error.response?.data?.message ||
           "Erreur lors de la mise à jour du mot de passe"
       );
-      throw new Error(
-        error.response?.data?.message ||
-          "Erreur lors de la mise à jour du mot de passe"
-      );
+      throw error;
     }
   };
 
   const value = {
     user,
     isAuthenticated,
+    isLoading,
     login,
     register,
     logout,
@@ -259,11 +282,5 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     updatePassword,
   };
 
-  if (isLoading) {
-    return <div>Chargement...</div>;
-  }
-
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
-
-export default AuthContext;

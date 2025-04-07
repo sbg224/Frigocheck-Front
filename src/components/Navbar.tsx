@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import AuthModal from "./AuthModal";
@@ -9,6 +9,16 @@ const Navbar = () => {
   const { user, isAuthenticated, logout } = useAuth();
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    // Attendre un court instant pour s'assurer que l'état d'authentification est chargé
+    const timer = setTimeout(() => {
+      setIsLoading(false);
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, []);
 
   const handleLogout = async () => {
     try {
@@ -27,18 +37,24 @@ const Navbar = () => {
         </Link>
       </div>
       <div className="navbar-links">
-        <Link to="/dashboard" className="nav-link">
-          Dashboard
-        </Link>
-        <Link to="/stock" className="nav-link">
-          Frigo
-        </Link>
-        <Link to="/about" className="nav-link">
-          À propos
-        </Link>
+        {isAuthenticated && (
+          <>
+            <Link to="/dashboard" className="nav-link">
+              Dashboard
+            </Link>
+            <Link to="/stock" className="nav-link">
+              Frigo
+            </Link>
+            <Link to="/about" className="nav-link">
+              À propos
+            </Link>
+          </>
+        )}
       </div>
       <div className="navbar-auth">
-        {isAuthenticated && user ? (
+        {isLoading ? (
+          <div className="loading-indicator">Chargement...</div>
+        ) : isAuthenticated && user ? (
           <div className="user-menu">
             <button
               className="user-menu-button"

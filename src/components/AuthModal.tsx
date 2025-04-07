@@ -62,19 +62,35 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
       if (isLoginMode) {
         await login(formData.email, formData.password);
         toast.success("Connexion réussie");
+        onClose();
       } else {
-        await register(
-          formData.firstname,
-          formData.lastname,
-          formData.email,
-          formData.password,
-          formData.birth_day
-        );
-        toast.success("Inscription réussie");
+        try {
+          const success = await register(
+            formData.firstname,
+            formData.lastname,
+            formData.email,
+            formData.password,
+            formData.birth_day
+          );
+          if (success) {
+            setIsLoginMode(true);
+            setFormData({
+              firstname: "",
+              lastname: "",
+              email: formData.email,
+              password: "",
+              confirmPassword: "",
+              birth_day: "",
+            });
+          }
+        } catch (error) {
+          console.error("Erreur lors de l'inscription:", error);
+          // Ne pas afficher de toast ici car la fonction register l'a déjà fait
+        }
       }
-      onClose();
-    } catch (error: any) {
-      toast.error(error.message);
+    } catch (error) {
+      console.error("Erreur lors de l'authentification:", error);
+      // Ne pas afficher de toast ici car les fonctions login/register l'ont déjà fait
     } finally {
       setIsLoading(false);
     }

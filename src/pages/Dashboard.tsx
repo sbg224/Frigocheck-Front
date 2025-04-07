@@ -1,81 +1,96 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { useLoaderData, useNavigate } from "react-router-dom";
-import axios from "axios";
-import { toast } from "react-toastify";
+import { useAuth } from "../contexts/AuthContext";
 import AddProductForm from "../components/AddProductForm";
-import Modal from "../components/Modal";
+import axiosInstance, { getUserFromToken } from "../utils/axios";
+import { toast } from "react-toastify";
 import "../styles/Dashboard.css";
 
-interface ShoppingListItem {
-  id: number;
-  designation: string;
-  quantite: number;
-  type_id: number;
-  genre_id: number;
-  user_id?: number;
-}
-
-interface StockItem {
-  id: number;
-  designation: string;
-  quantite: number;
-  type_id: number;
-  genre_id: number;
-}
-
 interface LoaderData {
-  shoppingList: ShoppingListItem[];
-  stockItems: StockItem[];
+  shoppingList: any[];
+  stockItems: any[];
 }
 
-const Dashboard = () => {
+const Dashboard: React.FC = () => {
+  const { shoppingList: initialShoppingList, stockItems: initialStockItems } =
+    useLoaderData() as LoaderData;
+  const { user } = useAuth();
   const navigate = useNavigate();
-  const loaderData = useLoaderData() as LoaderData;
+  const [isAddProductModalOpen, setIsAddProductModalOpen] = useState(false);
+  const [shoppingList, setShoppingList] = useState(initialShoppingList);
+  const [stockItems, setStockItems] = useState(initialStockItems);
+  const [isLoading, setIsLoading] = useState(false);
 
-  console.log("Données reçues du loader:", loaderData);
+  // États pour la recherche et le filtrage
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedType, setSelectedType] = useState<string>("all");
+  const [selectedGenre, setSelectedGenre] = useState<string>("all");
 
-  const [searchQuery, setSearchQuery] = useState("");
-  const [shoppingList, setShoppingList] = useState<ShoppingListItem[]>([]);
-  const [stockItems, setStockItems] = useState<StockItem[]>([]);
-  const [error, setError] = useState<string | null>(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
-
+  // Mettre à jour les états locaux lorsque les données du loader changent
   useEffect(() => {
-    console.log("UseEffect - Données du loader:", loaderData);
-    if (loaderData) {
-      setShoppingList(loaderData.shoppingList || []);
-      setStockItems(loaderData.stockItems || []);
-      setIsLoading(false);
-    }
-  }, [loaderData]);
+    console.log("Données du loader mises à jour:", {
+      shoppingList: initialShoppingList,
+      stockItems: initialStockItems,
+    });
+    setShoppingList(initialShoppingList);
+    setStockItems(initialStockItems);
+  }, [initialShoppingList, initialStockItems]);
 
-  // Fonction pour valider un article de la liste de courses
-  const validateShoppingItem = async (itemId: number) => {
+  const handleProductAdded = () => {
+    console.log("Produit ajouté, rechargement des données...");
+    setIsAddProductModalOpen(false);
+    // Recharger les données
+    navigate(".", { replace: true });
+  };
+
+  const handleValidateShoppingItem = async (itemId: number) => {
+    if (!user) {
+      toast.error("Vous devez être connecté pour valider un produit");
+      return;
+    }
+
+    setIsLoading(true);
     try {
-      await axios.post(
+      console.log("Validation du produit:", itemId);
+      await axiosInstance.post(
         `http://localhost:3315/api/shopping-list/validate/${itemId}`
       );
+      toast.success("Produit validé avec succès");
+      console.log("Produit validé avec succès, rechargement des données...");
+      // Recharger les données
       navigate(".", { replace: true });
-      toast.success("Article validé avec succès");
     } catch (error) {
-      console.error("Erreur lors de la validation de l'article:", error);
-      toast.error("Erreur lors de la validation de l'article");
-      setError("Erreur lors de la validation de l'article");
+      console.error("Erreur lors de la validation du produit:", error);
+      toast.error("Une erreur est survenue lors de la validation");
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  // Fonction pour supprimer un article de la liste de courses
-  const deleteShoppingItem = async (id: number) => {
+  const handleDeleteShoppingItem = async (itemId: number) => {
+    if (!user) {
+      toast.error("Vous devez être connecté pour supprimer un produit");
+      return;
+    }
+
+    setIsLoading(true);
     try {
-      await axios.delete(`http://localhost:3315/api/delete/shoppingList/${id}`);
+      console.log("Suppression du produit:", itemId);
+      await axiosInstance.delete(
+        `http://localhost:3315/api/delete/shoppingList/${itemId}`
+      );
+      toast.success("Produit supprimé avec succès");
+      console.log("Produit supprimé avec succès, rechargement des données...");
+      // Recharger les données
       navigate(".", { replace: true });
-      toast.success("Article supprimé avec succès");
     } catch (error) {
-      console.error("Erreur lors de la suppression de l'article:", error);
-      toast.error("Erreur lors de la suppression de l'article");
+      console.error("Erreur lors de la suppression du produit:", error);
+      toast.error("Une erreur est survenue lors de la suppression");
+    } finally {
+      setIsLoading(false);
     }
   };
+
 
   const getTypeLabel = (typeId: number) => {
     const types: { [key: number]: string } = {
@@ -97,131 +112,233 @@ const Dashboard = () => {
     return genres[genreId] || "Inconnu";
   };
 
-  console.log("État actuel - Liste de courses:", shoppingList);
-  console.log("État actuel - Stock:", stockItems);
 
-  if (error) {
-    return <div className="error">{error}</div>;
-  }
+  // Filtrer les produits en fonction de la recherche et des filtres
+  const filteredShoppingList = shoppingList.filter((item) => {
+    const matchesSearch = item.designation
+      .toLowerCase()
+      .includes(searchTerm.toLowerCase());
 
-  if (isLoading) {
-    return <div className="loading">Chargement en cours...</div>;
-  }
+    const matchesType =
+      selectedType === "all" || item.type_id.toString() === selectedType;
 
-  // Filtrer les articles en fonction de la recherche
-  const filteredShoppingList = shoppingList.filter((item) =>
-    item.designation.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+    const matchesGenre =
+      selectedGenre === "all" || item.genre_id.toString() === selectedGenre;
 
-  const filteredStockItems = stockItems.filter((item) =>
-    item.designation.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+    return matchesSearch && matchesType && matchesGenre;
+  });
+
+  const filteredStockItems = stockItems.filter((item) => {
+    const matchesSearch = item.designation
+      .toLowerCase()
+      .includes(searchTerm.toLowerCase());
+
+    const matchesType =
+      selectedType === "all" || item.type_id.toString() === selectedType;
+
+    const matchesGenre =
+      selectedGenre === "all" || item.genre_id.toString() === selectedGenre;
+
+    return matchesSearch && matchesType && matchesGenre;
+  });
+
+  // Gérer le changement de recherche
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchTerm(e.target.value);
+  };
+
+  // Gérer le changement de filtre de type
+  const handleTypeFilterChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setSelectedType(e.target.value);
+  };
+
+  // Gérer le changement de filtre de genre
+  const handleGenreFilterChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setSelectedGenre(e.target.value);
+  };
+
+  // Réinitialiser les filtres
+  const resetFilters = () => {
+    setSearchTerm("");
+    setSelectedType("all");
+    setSelectedGenre("all");
+  };
 
   return (
-    <div className="dashboard">
-      <header className="dashboard-header">
-        <h1>Tableau de bord</h1>
+    <div className="dashboard-container">
+      <h1>Tableau de bord</h1>
+
+      {/* Filtres et recherche */}
+      <div className="filters-container">
         <div className="search-bar">
           <input
             type="text"
-            placeholder="Rechercher un article..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Rechercher un produit..."
+            value={searchTerm}
+            onChange={handleSearchChange}
           />
         </div>
-      </header>
 
-      <section className="actions">
-        <button className="add-button" onClick={() => setIsModalOpen(true)}>
-          Ajouter un article à la liste
-        </button>
-      </section>
+        <div className="filters">
+          <div className="filter-group">
+            <label htmlFor="type-filter">Type:</label>
+            <select
+              id="type-filter"
+              value={selectedType}
+              onChange={handleTypeFilterChange}
+            >
+              <option value="all">Tous les types</option>
+              <option value="5">Frais</option>
+              <option value="6">Conserve</option>
+              <option value="7">Surgelé</option>
+            </select>
+          </div>
 
-      <Modal
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        title="Ajouter un article à la liste de courses"
-      >
-        <AddProductForm
-          onProductAdded={() => {
-            navigate(".", { replace: true });
-            setIsModalOpen(false);
-            toast.success("Article ajouté avec succès");
-          }}
-        />
-      </Modal>
+          <div className="filter-group">
+            <label htmlFor="genre-filter">Genre:</label>
+            <select
+              id="genre-filter"
+              value={selectedGenre}
+              onChange={handleGenreFilterChange}
+            >
+              <option value="all">Tous les genres</option>
+              <option value="5">Fruits & Légumes</option>
+              <option value="6">Viandes & Poissons</option>
+              <option value="7">Produits Laitiers</option>
+              <option value="8">Épicerie</option>
+            </select>
+          </div>
 
-      <section className="shopping-list">
-        <h2>
-          Liste de courses{" "}
-          {filteredShoppingList.length > 0 &&
-            `(${filteredShoppingList.length})`}
-        </h2>
-        <div className="items-grid">
-          {filteredShoppingList.length === 0 ? (
-            <p className="empty-message">
-              {searchQuery
-                ? "Aucun article ne correspond à votre recherche"
-                : "Aucun article dans la liste de courses"}
+          <button className="reset-filters" onClick={resetFilters}>
+            Réinitialiser
+          </button>
+        </div>
+      </div>
+
+      {/* Section Liste de courses */}
+      <div className="dashboard-section">
+        <div className="section-header">
+          <h2>Liste de courses</h2>
+          <button
+            className="add-button"
+            onClick={() => setIsAddProductModalOpen(true)}
+            disabled={isLoading}
+          >
+            Ajouter un produit
+          </button>
+        </div>
+
+        {shoppingList.length === 0 ? (
+          <div className="empty-state">
+            <p>Votre liste de courses est vide.</p>
+            <p>
+              Cliquez sur "Ajouter un produit" pour commencer à remplir votre
+              liste.
             </p>
-          ) : (
-            filteredShoppingList.map((item) => (
-              <div key={item.id} className="item-card shopping-item">
-                <h3>{item.designation}</h3>
-                <p>Quantité: {item.quantite}</p>
-                <p>Type: {getTypeLabel(item.type_id)}</p>
-                <p>Catégorie: {getGenreLabel(item.genre_id)}</p>
-                <div className="button-group">
+          </div>
+        ) : filteredShoppingList.length === 0 ? (
+          <div className="empty-state">
+            <p>Aucun produit ne correspond à vos critères de recherche.</p>
+            <p>Essayez de modifier vos filtres ou votre recherche.</p>
+          </div>
+        ) : (
+          <div className="items-grid">
+            {filteredShoppingList.map((item) => (
+              <div key={item.id} className="item-card">
+                <div className="item-info">
+                  <h3>{item.designation}</h3>
+                  <p>
+                    <span className="label">Type:</span>{" "}
+                    {getTypeLabel(item.type_id)}
+                  </p>
+                  <p>
+                    <span className="label">Genre:</span>{" "}
+                    {getGenreLabel(item.genre_id)}
+                  </p>
+                  <p>
+                    <span className="label">Quantité:</span> {item.quantite}
+                  </p>
+                </div>
+                <div className="item-actions">
                   <button
                     className="validate-button"
-                    onClick={() => validateShoppingItem(item.id)}
+                    onClick={() => handleValidateShoppingItem(item.id)}
+                    disabled={isLoading}
                   >
-                    Valider l'achat
+                    Valider
                   </button>
                   <button
                     className="delete-button"
-                    onClick={() => deleteShoppingItem(item.id)}
+                    onClick={() => handleDeleteShoppingItem(item.id)}
+                    disabled={isLoading}
                   >
                     Supprimer
                   </button>
                 </div>
               </div>
-            ))
-          )}
-        </div>
-      </section>
+            ))}
+          </div>
+        )}
+      </div>
 
-      <section className="stock-list">
-        <h2>
-          Stock actuel{" "}
-          {filteredStockItems.length > 0 && `(${filteredStockItems.length})`}
-        </h2>
-        <div className="items-grid">
-          {filteredStockItems.length === 0 ? (
-            <p className="empty-message">
-              {searchQuery
-                ? "Aucun article ne correspond à votre recherche"
-                : "Aucun article en stock"}
-            </p>
-          ) : (
-            filteredStockItems.map((item) => (
-              <div key={item.id} className="item-card stock-item">
-                <h3>{item.designation}</h3>
-                <p>Quantité: {item.quantite}</p>
-                <p>Type: {getTypeLabel(item.type_id)}</p>
-                <p>Catégorie: {getGenreLabel(item.genre_id)}</p>
-              </div>
-            ))
-          )}
+      {/* Section Stock */}
+      <div className="dashboard-section">
+        <div className="section-header">
+          <h2>Stock</h2>
         </div>
-        <button
-          className="stock-button"
-          type="button"
-          onClick={() => navigate("/stock")}
-        >
-          Voir le stock
+
+        {stockItems.length === 0 ? (
+          <div className="empty-state">
+            <p>Votre stock est vide.</p>
+            <p>
+              Validez des produits de votre liste de courses pour les ajouter à
+              votre stock.
+            </p>
+          </div>
+        ) : filteredStockItems.length === 0 ? (
+          <div className="empty-state">
+            <p>Aucun produit ne correspond à vos critères de recherche.</p>
+            <p>Essayez de modifier vos filtres ou votre recherche.</p>
+          </div>
+        ) : (
+          <div className="items-grid">
+            {filteredStockItems.map((item) => (
+              <div key={item.id} className="item-card">
+                <div className="item-info">
+                  <h3>{item.designation}</h3>
+                  <p>
+                    <span className="label">Type:</span>{" "}
+                    {getTypeLabel(item.type_id)}
+                  </p>
+                  <p>
+                    <span className="label">Genre:</span>{" "}
+                    {getGenreLabel(item.genre_id)}
+                  </p>
+                  <p>
+                    <span className="label">Quantité:</span> {item.quantite}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+        <button className="view-more-button" onClick={() => navigate("/stock")}>
+          Voir plus de produits
         </button>
-      </section>
+      </div>
+
+      {/* Modal d'ajout de produit */}
+      {isAddProductModalOpen && (
+        <div className="modal-overlay">
+          <div className="modal-content">
+            <h2>Ajouter un produit</h2>
+            <AddProductForm
+              onProductAdded={handleProductAdded}
+              onClose={() => setIsAddProductModalOpen(false)}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 };

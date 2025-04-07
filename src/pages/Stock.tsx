@@ -1,9 +1,10 @@
-import { useState } from "react";
-import { useLoaderData } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { useLoaderData, useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import Modal from "../components/Modal";
-import axios from "axios";
+import axiosInstance from "../utils/axios";
 import "../styles/Stock.css";
+import { useAuth } from "../contexts/AuthContext";
 
 interface StockItem {
   id: number;
@@ -18,12 +19,21 @@ interface LoaderData {
 }
 
 const Stock = () => {
-  const { stockItems } = useLoaderData() as LoaderData;
+  const navigate = useNavigate();
+  const { stockItems: initialStockItems } = useLoaderData() as LoaderData;
+  const { user, isAuthenticated } = useAuth();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedItem, setSelectedItem] = useState<StockItem | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
   const [editedItem, setEditedItem] = useState<StockItem | null>(null);
+  const [stockItems, setStockItems] = useState<StockItem[]>(initialStockItems);
+  const [isLoading, setIsLoading] = useState(false);
+
+  // Mettre à jour stockItems quand initialStockItems change
+  useEffect(() => {
+    setStockItems(initialStockItems);
+  }, [initialStockItems]);
 
   const getTypeLabel = (typeId: number) => {
     const types: { [key: number]: string } = {
@@ -70,36 +80,68 @@ const Stock = () => {
   };
 
   const handleSave = async () => {
-    if (editedItem) {
-      try {
-        await axios.put(
-          `http://localhost:3315/api/modifi/produit/${editedItem.id}`,
-          editedItem
-        );
-        toast.success("Article modifié avec succès");
-        handleCloseModal();
-        window.location.reload(); // Recharger la page pour mettre à jour les données
-      } catch (error) {
-        console.error("Erreur lors de la mise à jour:", error);
-        toast.error("Erreur lors de la mise à jour de l'article");
-      }
+    if (!isAuthenticated || !user) {
+      toast.error("Vous devez être connecté pour modifier un article");
+      return;
+    }
+
+    if (!editedItem) return;
+
+    setIsLoading(true);
+    try {
+      await axiosInstance.put(
+        `http://localhost:3315/api/modifi/produit/${editedItem.id}`,
+        {
+          ...editedItem,
+          user_id: user.id,
+        }
+      );
+
+      // Mettre à jour l'état local
+      setStockItems((prevItems) =>
+        prevItems.map((item) => (item.id === editedItem.id ? editedItem : item))
+      );
+
+      toast.success("Article modifié avec succès");
+      handleCloseModal();
+    } catch (error) {
+      console.error("Erreur lors de la modification:", error);
+      toast.error("Erreur lors de la modification de l'article");
+    } finally {
+      setIsLoading(false);
     }
   };
 
   const handleDelete = async () => {
-    if (selectedItem) {
-      try {
-        await axios.delete(
-          `http://localhost:3315/api/supprime/produit/${selectedItem.id}`
-        );
-        toast.success("Article supprimé avec succès");
-        setIsDeleteConfirmOpen(false);
-        handleCloseModal();
-        window.location.reload(); // Recharger la page pour mettre à jour les données
-      } catch (error) {
-        console.error("Erreur lors de la suppression:", error);
-        toast.error("Erreur lors de la suppression de l'article");
-      }
+    if (!isAuthenticated || !user) {
+      toast.error("Vous devez être connecté pour supprimer un article");
+      return;
+    }
+
+    if (!selectedItem) return;
+
+    setIsLoading(true);
+    try {
+      await axiosInstance.delete(
+        `http://localhost:3315/api/supprime/produit/${selectedItem.id}`,
+        {
+          data: { user_id: user.id },
+        }
+      );
+
+      // Mettre à jour l'état local
+      setStockItems((prevItems) =>
+        prevItems.filter((item) => item.id !== selectedItem.id)
+      );
+
+      toast.success("Article supprimé avec succès");
+      setIsDeleteConfirmOpen(false);
+      setSelectedItem(null);
+    } catch (error) {
+      console.error("Erreur lors de la suppression:", error);
+      toast.error("Erreur lors de la suppression de l'article");
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -159,94 +201,120 @@ const Stock = () => {
         </p>
       )}
 
-      {/* Modal de modification */}
-      <Modal
-        isOpen={isModalOpen}
-        onClose={handleCloseModal}
-        title="Modifier l'article"
-      >
-        {editedItem && (
+      {isModalOpen && (
+        <Modal
+          isOpen={isModalOpen}
+          title="Modifier l'article"
+          onClose={handleCloseModal}
+        >
           <div className="edit-form">
             <div className="form-group">
-              <label>Désignation:</label>
+              <label htmlFor="designation">Désignation</label>
               <input
                 type="text"
+                id="designation"
                 name="designation"
-                value={editedItem.designation}
+                value={editedItem?.designation || ""}
                 onChange={handleInputChange}
+                required
               />
             </div>
+
             <div className="form-group">
-              <label>Quantité:</label>
+              <label htmlFor="quantite">Quantité</label>
               <input
                 type="number"
+                id="quantite"
                 name="quantite"
-                value={editedItem.quantite}
+                value={editedItem?.quantite || 0}
                 onChange={handleInputChange}
+                min="0"
+                required
               />
             </div>
+
             <div className="form-group">
-              <label>Type:</label>
+              <label htmlFor="type_id">Type</label>
               <select
+                id="type_id"
                 name="type_id"
-                value={editedItem.type_id}
+                value={editedItem?.type_id || 5}
                 onChange={handleInputChange}
+                required
               >
-                <option value={5}>Frais</option>
-                <option value={6}>Conserve</option>
-                <option value={7}>Surgelé</option>
+                <option value="5">Frais</option>
+                <option value="6">Conserve</option>
+                <option value="7">Surgelé</option>
               </select>
             </div>
+
             <div className="form-group">
-              <label>Genre:</label>
+              <label htmlFor="genre_id">Catégorie</label>
               <select
+                id="genre_id"
                 name="genre_id"
-                value={editedItem.genre_id}
+                value={editedItem?.genre_id || 5}
                 onChange={handleInputChange}
+                required
               >
-                <option value={5}>F & L</option>
-                <option value={6}>NAL</option>
-                <option value={7}>Viandes</option>
-                <option value={8}>Produits Laitiers</option>
-                <option value={9}>Épicerie</option>
+                <option value="5">F & L</option>
+                <option value="6">NAL</option>
+                <option value="7">Viandes</option>
+                <option value="8">Produits Laitiers</option>
+                <option value="9">Épicerie</option>
               </select>
             </div>
+
             <div className="modal-actions">
-              <button className="save-button" onClick={handleSave}>
-                Valider
+              <button
+                className="save-button"
+                onClick={handleSave}
+                disabled={isLoading}
+              >
+                {isLoading ? "Enregistrement..." : "Valider"}
               </button>
               <button
                 className="delete-button"
                 onClick={() => setIsDeleteConfirmOpen(true)}
+                disabled={isLoading}
               >
                 Supprimer
               </button>
             </div>
           </div>
-        )}
-      </Modal>
+        </Modal>
+      )}
 
-      {/* Modal de confirmation de suppression */}
-      <Modal
-        isOpen={isDeleteConfirmOpen}
-        onClose={() => setIsDeleteConfirmOpen(false)}
-        title="Confirmer la suppression"
-      >
-        <div className="confirm-delete">
-          <p>Êtes-vous sûr de vouloir supprimer cet article ?</p>
-          <div className="modal-actions">
-            <button className="delete-button" onClick={handleDelete}>
-              Confirmer
-            </button>
-            <button
-              className="cancel-button"
-              onClick={() => setIsDeleteConfirmOpen(false)}
-            >
-              Annuler
-            </button>
+      {isDeleteConfirmOpen && (
+        <Modal
+          isOpen={isDeleteConfirmOpen}
+          title="Confirmer la suppression"
+          onClose={() => setIsDeleteConfirmOpen(false)}
+        >
+          <div className="confirm-delete">
+            <p>
+              Êtes-vous sûr de vouloir supprimer l'article{" "}
+              <strong>{selectedItem?.designation}</strong> ?
+            </p>
+            <div className="modal-actions">
+              <button
+                className="delete-button"
+                onClick={handleDelete}
+                disabled={isLoading}
+              >
+                {isLoading ? "Suppression..." : "Confirmer"}
+              </button>
+              <button
+                className="cancel-button"
+                onClick={() => setIsDeleteConfirmOpen(false)}
+                disabled={isLoading}
+              >
+                Annuler
+              </button>
+            </div>
           </div>
-        </div>
-      </Modal>
+        </Modal>
+      )}
     </div>
   );
 };
