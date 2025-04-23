@@ -43,6 +43,21 @@ Elle permet d’avoir une **vue claire et en temps réel sur les produits dispon
 
 ## 📷 Aperçu de l’application
 
+### 🔐 Page d’accueil & Connexion
+![Page d'accueil](./src/assets/imagesReadme/Capture%20d’écran%202025-04-23%20à%2017.32.21.png)  
+Page d’accueil de FrigoCheck, avec appel à l’action pour se connecter ou s’inscrire.
+
+![Connexion](./src/assets/imagesReadme/Capture%20d’écran%202025-04-23%20à%2017.33.15.png)  
+Interface de connexion sécurisée.
+
+### 🧭 Tableau de bord & Ajout de produit
+
+![Dashboard et stock](./src/assets/imagesReadme/Capture%20d’écran%202025-04-23%20à%2017.33.22.png)  
+Vue du tableau de bord avec liste de courses et stock.
+
+![Ajout de produit](./src/assets/imagesReadme/Capture%20d’écran%202025-04-23%20à%2017.33.38.png)  
+Fenêtre modale pour ajouter un produit dans la liste.
+
 > 📍 À la connexion, l'utilisateur arrive sur un dashboard avec deux options principales :
 > - **Frigo** : voir le stock alimentaire
 > - **À propos** : info sur l’application
