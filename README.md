@@ -1,54 +1,98 @@
-# React + TypeScript + Vite
+# 🧊 FrigoCheck
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+FrigoCheck est une application pensée pour aider les ménages, les couples ou les personnes vivant seules à mieux gérer leur stock alimentaire et leurs courses.  
+Elle permet d’avoir une **vue claire et en temps réel sur les produits disponibles à la maison**, de générer automatiquement des listes de courses, et ainsi de limiter le gaspillage et les achats inutiles.
 
-Currently, two official plugins are available:
+## 🎯 Objectif
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react/README.md) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- Réduire le gaspillage alimentaire
+- Éviter le surstockage et les doublons
+- Faciliter la planification des courses
+- Inciter les utilisateurs à s’impliquer dans la gestion de leur consommation
 
-## Expanding the ESLint configuration
+---
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+## 🚀 Fonctionnalités
 
-```js
-export default tseslint.config({
-  extends: [
-    // Remove ...tseslint.configs.recommended and replace with this
-    ...tseslint.configs.recommendedTypeChecked,
-    // Alternatively, use this for stricter rules
-    ...tseslint.configs.strictTypeChecked,
-    // Optionally, add this for stylistic rules
-    ...tseslint.configs.stylisticTypeChecked,
-  ],
-  languageOptions: {
-    // other options...
-    parserOptions: {
-      project: ['./tsconfig.node.json', './tsconfig.app.json'],
-      tsconfigRootDir: import.meta.dirname,
-    },
-  },
-})
-```
+- 🧾 Création de listes de courses
+- ✅ Validation et transfert automatique dans le stock
+- 📦 Suivi du stock avec catégories (alimentaire / non-alimentaire)
+- 👤 Authentification sécurisée (compte obligatoire)
+- 📊 Aperçu graphique des produits stockés
+- 🏷️ Fonctionnalité à venir : suggestions de promotions via scraping (Carrefour, Leclerc, Auchan...)
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+---
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+## 🛠️ Technologies utilisées
 
-export default tseslint.config({
-  plugins: {
-    // Add the react-x and react-dom plugins
-    'react-x': reactX,
-    'react-dom': reactDom,
-  },
-  rules: {
-    // other rules...
-    // Enable its recommended typescript rules
-    ...reactX.configs['recommended-typescript'].rules,
-    ...reactDom.configs.recommended.rules,
-  },
-})
-```
+### Frontend
+- React (avec TypeScript)
+
+### Backend
+- Node.js + Express
+
+### Base de données
+- MySQL
+
+### Autres
+- Authentification avec Bcrypt
+- Web scraping (prévu, en cours d’intégration)
+- Hébergement futur avec Docker
+
+---
+
+## 📷 Aperçu de l’application
+
+> 📍 À la connexion, l'utilisateur arrive sur un dashboard avec deux options principales :
+> - **Frigo** : voir le stock alimentaire
+> - **À propos** : info sur l’application
+
+À partir du dashboard :
+- ➕ Ajout de produits dans la liste de courses
+- ✔️ Une fois validée, la liste devient un stock réel
+- 📊 Aperçus disponibles : répartition des produits par type
+
+---
+
+## 🔐 Accès
+
+L’utilisation de FrigoCheck nécessite la création d’un compte utilisateur.  
+Chaque utilisateur a accès **uniquement à ses propres données**, garantissant confidentialité et sécurité.
+
+---
+
+## 🧭 Roadmap
+
+- [x] Système d’authentification
+- [x] Gestion de stock et listes
+- [ ] Scraping des promotions (en cours)
+- [ ] Notifications de produits expirés
+- [ ] Système de filtres et recherche avancée
+
+---
+
+## 🤝 Contribution
+
+Les contributions sont les bienvenues !
+
+### Règles de contribution
+- Créez une **issue** avant de commencer un développement.
+- Travaillez sur une branche nommée `feature/nom-de-votre-feature`
+- Faites une Pull Request claire et détaillée
+- Respectez la structure du projet
+
+---
+
+## 📄 Licence
+
+Ce projet est sous licence **MIT**.  
+Vous êtes libre de l’utiliser, le modifier ou le redistribuer avec attribution.
+
+---
+
+## 📬 Contact
+
+Pour toute question, suggestion ou retour :  
+📧 [sambah450@gmail.com]
+
+---
