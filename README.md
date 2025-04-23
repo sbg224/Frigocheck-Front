@@ -52,11 +52,26 @@ Interface de connexion sécurisée.
 
 ### 🧭 Tableau de bord & Ajout de produit
 
-![Dashboard et stock](./src/assets/imagesReadme/Capture%20d’écran%202025-04-23%20à%2017.33.22.png)  
+![Dashboard et stock](./src/assets/imagesReadme/Capture%20d’écran%202025-04-23%20à%2017.33.38.png)  
 Vue du tableau de bord avec liste de courses et stock.
 
-![Ajout de produit](./src/assets/imagesReadme/Capture%20d’écran%202025-04-23%20à%2017.33.38.png)  
+![Ajout de produit](./src/assets/imagesReadme/Capture%20d’écran%202025-04-23%20à%2017.34.02.png)  
 Fenêtre modale pour ajouter un produit dans la liste.
+
+### 🧭 apreçu de la page stock et A propos (Frigo, A propos)
+
+![ page Frigo](./src/assets/imagesReadme/Capture%20d’écran%202025-04-23%20à%2017.34.19.png)  
+Vue du tableau de bord du stock.
+
+
+![ page A propos](./src/assets/imagesReadme/Capture%20d’écran%202025-04-23%20à%2017.34.32.png)  
+Vue la page A propos.
+
+
+### 🧭 apreçu de la page profil
+
+![ page A propos](./src/assets/imagesReadme/Capture%20d’écran%202025-04-23%20à%2017.35.03.png)  
+Vue la page gestion du profil.
 
 > 📍 À la connexion, l'utilisateur arrive sur un dashboard avec deux options principales :
 > - **Frigo** : voir le stock alimentaire
