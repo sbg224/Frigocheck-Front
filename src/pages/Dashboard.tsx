@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from "react";
+import type React from "react";
+import { useState, useEffect } from "react";
 import { useLoaderData, useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import AddProductForm from "../components/AddProductForm";
@@ -7,8 +8,8 @@ import { toast } from "react-toastify";
 import "../styles/Dashboard.css";
 
 interface LoaderData {
-  shoppingList: any[];
-  stockItems: any[];
+  shoppingList: { id: number; designation: string; type_id: number; genre_id: number; quantite: number }[];
+  stockItems: { id: number; designation: string; type_id: number; genre_id: number; quantite: number }[];
 }
 
 const Dashboard: React.FC = () => {
@@ -209,7 +210,7 @@ const Dashboard: React.FC = () => {
             </select>
           </div>
 
-          <button className="reset-filters" onClick={resetFilters}>
+          <button type="button" className="reset-filters" onClick={resetFilters}>
             Réinitialiser
           </button>
         </div>
@@ -220,6 +221,7 @@ const Dashboard: React.FC = () => {
         <div className="section-header">
           <h2>Liste de courses</h2>
           <button
+          type="button"
             className="add-button"
             onClick={() => setIsAddProductModalOpen(true)}
             disabled={isLoading}
@@ -261,6 +263,7 @@ const Dashboard: React.FC = () => {
                 </div>
                 <div className="item-actions">
                   <button
+                  type="button"
                     className="validate-button"
                     onClick={() => handleValidateShoppingItem(item.id)}
                     disabled={isLoading}
@@ -268,6 +271,7 @@ const Dashboard: React.FC = () => {
                     Valider
                   </button>
                   <button
+                    type="button"
                     className="delete-button"
                     onClick={() => handleDeleteShoppingItem(item.id)}
                     disabled={isLoading}
@@ -322,7 +326,7 @@ const Dashboard: React.FC = () => {
             ))}
           </div>
         )}
-        <button className="view-more-button" onClick={() => navigate("/stock")}>
+        <button type="button" className="view-more-button" onClick={() => navigate("/stock")}>
           Voir plus de produits
         </button>
       </div>
