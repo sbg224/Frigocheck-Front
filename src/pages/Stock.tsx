@@ -183,6 +183,11 @@ const Stock = () => {
                 key={item.id}
                 className="item-card"
                 onClick={() => handleItemClick(item)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    handleItemClick(item);
+                  }
+                }}
               >
                 <h3>{item.designation}</h3>
                 <p>Quantité: {item.quantite}</p>
@@ -267,6 +272,7 @@ const Stock = () => {
 
             <div className="modal-actions">
               <button
+                type="button"
                 className="save-button"
                 onClick={handleSave}
                 disabled={isLoading}
@@ -274,6 +280,7 @@ const Stock = () => {
                 {isLoading ? "Enregistrement..." : "Valider"}
               </button>
               <button
+                type="button"
                 className="delete-button"
                 onClick={() => setIsDeleteConfirmOpen(true)}
                 disabled={isLoading}
@@ -298,6 +305,7 @@ const Stock = () => {
             </p>
             <div className="modal-actions">
               <button
+                type="button"
                 className="delete-button"
                 onClick={handleDelete}
                 disabled={isLoading}
@@ -305,6 +313,7 @@ const Stock = () => {
                 {isLoading ? "Suppression..." : "Confirmer"}
               </button>
               <button
+                type="button"
                 className="cancel-button"
                 onClick={() => setIsDeleteConfirmOpen(false)}
                 disabled={isLoading}

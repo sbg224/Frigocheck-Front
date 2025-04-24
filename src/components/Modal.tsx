@@ -1,4 +1,4 @@
-import React from "react";
+import type React from "react";
 import "../styles/Modal.css";
 
 interface ModalProps {
@@ -16,7 +16,7 @@ const Modal = ({ isOpen, onClose, title, children }: ModalProps) => {
       <div className="modal-content">
         <div className="modal-header">
           <h2>{title}</h2>
-          <button onClick={onClose} className="modal-close">
+          <button type="button" onClick={onClose} className="modal-close">
             ×
           </button>
         </div>

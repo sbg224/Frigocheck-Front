@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+import type React from "react";
+import { useState } from "react";
 import { useAuth } from "../contexts/AuthContext";
 import Modal from "./Modal";
 import { toast } from "react-toastify";

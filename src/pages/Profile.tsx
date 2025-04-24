@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+import type React from "react";
+import { useState } from "react";
 import { useAuth } from "../contexts/AuthContext";
 import { toast } from "react-toastify";
 import "../styles/Profile.css";
@@ -38,8 +39,9 @@ const Profile = () => {
       await updateProfile(profileData);
       setIsEditingProfile(false);
       toast.success("Profil mis à jour avec succès");
-    } catch (error: any) {
-      toast.error(error.message);
+    } catch (error: unknown) {
+      console.error("Erreur lors de la mise à jour du profil:", error);
+      toast.error(error instanceof Error ? error.message : "Erreur lors de la mise à jour du profil");
     }
   };
 
@@ -62,8 +64,8 @@ const Profile = () => {
         confirmPassword: "",
       });
       toast.success("Mot de passe mis à jour avec succès");
-    } catch (error: any) {
-      toast.error(error.message);
+    } catch (error: unknown) {
+      toast.error(error instanceof Error ? error.message : "Erreur lors de la mise à jour du mot de passe");
     }
   };
 
@@ -125,6 +127,7 @@ const Profile = () => {
               <strong>Email:</strong> {user.email}
             </p>
             <button
+            type="button"
               className="edit-button"
               onClick={() => setIsEditingProfile(true)}
             >
@@ -192,6 +195,7 @@ const Profile = () => {
           </form>
         ) : (
           <button
+          type="button"
             className="change-password-button"
             onClick={() => setIsChangingPassword(true)}
           >

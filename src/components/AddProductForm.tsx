@@ -3,6 +3,7 @@ import { useAuth } from "../contexts/AuthContext";
 import axiosInstance from "../utils/axios";
 import { toast } from "react-toastify";
 import "../styles/AddProductForm.css";
+import { AxiosError } from "axios";
 
 interface ProductFormData {
   designation: string;
@@ -22,7 +23,10 @@ interface ProductExistsResponse {
 interface AddProductFormProps {
   onProductAdded: () => void;
   onClose: () => void;
-  initialData?: any;
+  initialData?: {
+    name: string;
+    quantity: number;
+  };
   isEditing?: boolean;
 }
 
@@ -43,7 +47,7 @@ const AddProductForm: React.FC<AddProductFormProps> = ({
 
   // Mettre à jour l'ID utilisateur lorsque l'utilisateur change
   useEffect(() => {
-    if (user && user.id) {
+    if (user?.id) {
       console.log(
         "Mise à jour de l'ID utilisateur dans le formulaire:",
         user.id
@@ -86,7 +90,7 @@ const AddProductForm: React.FC<AddProductFormProps> = ({
     try {
       console.log("Envoi des données du formulaire:", formData);
       const response = await axiosInstance.post(
-        `http://localhost:3315/api/shopping-list`,
+        "http://localhost:3315/api/shopping-list",
         formData
       );
       if (response.data) {
@@ -103,11 +107,11 @@ const AddProductForm: React.FC<AddProductFormProps> = ({
         // Appeler le callback pour mettre à jour la liste
         onProductAdded();
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Erreur lors de l'ajout du produit :", error);
 
       // Vérifier si l'erreur est due à l'existence du produit
-      if (error.response && error.response.status === 409) {
+      if (error instanceof AxiosError && error.response?.status === 409) {
         const errorData = error.response.data as ProductExistsResponse;
         console.log("Produit existant détecté:", errorData);
         setExistingProduct({
@@ -175,12 +179,12 @@ const AddProductForm: React.FC<AddProductFormProps> = ({
     const { name, value } = e.target;
     setFormData((prev) => ({
       ...prev,
-      [name]: name === "quantite" ? parseInt(value) : value,
+      [name]: name === "quantite" ? Number.parseInt(value) : value,
     }));
   };
 
   const handleQuantityChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setNewQuantity(parseInt(e.target.value));
+    setNewQuantity(Number.parseInt(e.target.value));
   };
 
   return (

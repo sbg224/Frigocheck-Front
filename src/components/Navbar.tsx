@@ -57,6 +57,7 @@ const Navbar = () => {
         ) : isAuthenticated && user ? (
           <div className="user-menu">
             <button
+              type="button"
               className="user-menu-button"
               onClick={() => setIsMenuOpen(!isMenuOpen)}
             >
@@ -68,6 +69,7 @@ const Navbar = () => {
                   Profil
                 </Link>
                 <button
+                  type="button"
                   onClick={() => {
                     handleLogout();
                     setIsMenuOpen(false);
@@ -80,6 +82,7 @@ const Navbar = () => {
           </div>
         ) : (
           <button
+            type="button"
             className="auth-button"
             onClick={() => setIsAuthModalOpen(true)}
           >

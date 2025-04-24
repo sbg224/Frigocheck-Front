@@ -40,7 +40,7 @@ const Home = () => {
           </div>
           <h1 className="home-title">FrigoCheck</h1>
           <p className="home-subtitle">Assistant d'épicerie</p>
-          <button className="start-button" onClick={handleStartClick}>
+          <button type="button" className="start-button" onClick={handleStartClick}>
             {isAuthenticated
               ? "Accéder à mon tableau de bord"
               : "Se connecter pour commencer"}

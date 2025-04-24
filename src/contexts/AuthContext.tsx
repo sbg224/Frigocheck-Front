@@ -1,4 +1,5 @@
-import React, { createContext, useContext, useState, useEffect } from "react";
+import type React from "react";
+import { createContext, useContext, useState, useEffect } from "react";
 import axiosInstance, {
   isAuthenticated as checkAuthStatus,
   fetchUserData,
@@ -77,35 +78,27 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
               console.log("❌ Impossible de récupérer les données utilisateur");
               setUser(null);
               setIsAuthenticated(false);
-              // Ne pas nettoyer les informations d'authentification ici
-              // clearAuthInfo();
             }
-          } catch (error) {
+          } catch (error: unknown) {
             console.error(
               "❌ Erreur lors de la récupération des données utilisateur:",
               error
             );
             setUser(null);
             setIsAuthenticated(false);
-            // Ne pas nettoyer les informations d'authentification ici
-            // clearAuthInfo();
           }
         } else {
           console.log("❌ Utilisateur non authentifié");
           setUser(null);
           setIsAuthenticated(false);
-          // Ne pas nettoyer les informations d'authentification ici
-          // clearAuthInfo();
         }
-      } catch (error) {
+      } catch (error: unknown) {
         console.error(
           "❌ Erreur lors de la vérification de l'authentification:",
           error
         );
         setUser(null);
         setIsAuthenticated(false);
-        // Ne pas nettoyer les informations d'authentification ici
-        // clearAuthInfo();
       } finally {
         setIsLoading(false);
         setAuthChecked(true);
@@ -129,7 +122,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       const { user, token } = response.data;
       console.log("Réponse de connexion:", response.data);
 
-      if (user && user.id) {
+      if (user?.id) {
         console.log("✅ Connexion réussie");
         // Stocker les informations d'authentification
         setAuthInfo(token, user.id.toString());
@@ -139,9 +132,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       } else {
         throw new Error("Données d'authentification invalides");
       }
-    } catch (error: any) {
-      console.error("❌ Erreur de connexion:", error.response?.data || error);
-      toast.error(error.response?.data?.message || "Erreur de connexion");
+    } catch (error: unknown) {
+      console.error("❌ Erreur de connexion:", error instanceof Error ? error.message : error);
+      toast.error(error instanceof Error ? error.message : "Erreur de connexion");
       throw error;
     }
   };
@@ -169,23 +162,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       console.log("Réponse d'inscription:", response.data);
 
       // Vérifier si la réponse indique un succès, même sans ID utilisateur
-      if (response.data && response.data.success) {
+      if (response.data?.success) {
         toast.success(
           "Inscription réussie ! Vous pouvez maintenant vous connecter."
         );
         return true;
       }
 
-      // Si la réponse contient un utilisateur avec un ID, c'est aussi un succès
       const { user } = response.data;
-      if (user && user.id) {
+      if (user?.id) {
         toast.success(
           "Inscription réussie ! Vous pouvez maintenant vous connecter."
         );
         return true;
       }
 
-      // Si nous arrivons ici, c'est que l'inscription a réussi mais la réponse n'est pas dans le format attendu
       console.log(
         "Inscription réussie mais format de réponse inattendu:",
         response.data
@@ -194,10 +185,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         "Inscription réussie ! Vous pouvez maintenant vous connecter."
       );
       return true;
-    } catch (error: any) {
-      console.error("Erreur d'inscription:", error.response?.data || error);
+    } catch (error: unknown) {
+      console.error("Erreur d'inscription:", error instanceof Error ? error.message : error);
       toast.error(
-        error.response?.data?.message || "Erreur lors de l'inscription"
+        error instanceof Error ? error.message : "Erreur lors de l'inscription"
       );
       throw error;
     }
@@ -211,8 +202,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       setUser(null);
       setIsAuthenticated(false);
       toast.success("Déconnexion réussie");
-    } catch (error) {
-      console.error("❌ Erreur lors de la déconnexion:", error);
+    } catch (error: unknown) {
+      console.error("❌ Erreur lors de la déconnexion:", error instanceof Error ? error.message : error);
       toast.error("Erreur lors de la déconnexion");
     }
   };
@@ -230,14 +221,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
       setUser({ ...user, ...data });
       toast.success("Profil mis à jour avec succès !");
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error(
         "Erreur lors de la mise à jour du profil:",
-        error.response?.data || error
+        error instanceof Error ? error.message : error
       );
       toast.error(
-        error.response?.data?.message ||
-          "Erreur lors de la mise à jour du profil"
+        error instanceof Error ? error.message : "Erreur lors de la mise à jour du profil"
       );
       throw error;
     }
@@ -258,14 +248,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       );
 
       toast.success("Mot de passe mis à jour avec succès !");
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error(
         "Erreur lors de la mise à jour du mot de passe:",
-        error.response?.data || error
+        error instanceof Error ? error.message : error
       );
       toast.error(
-        error.response?.data?.message ||
-          "Erreur lors de la mise à jour du mot de passe"
+        error instanceof Error ? error.message : "Erreur lors de la mise à jour du mot de passe"
       );
       throw error;
     }

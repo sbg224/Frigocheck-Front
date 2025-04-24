@@ -41,15 +41,17 @@ async function shoppingListLoader() {
 
     console.log("Liste de courses chargée:", response.data);
     return { shoppingList: response.data.data || [] };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Erreur lors du chargement de la liste de courses:", error);
 
     // Si l'erreur est 404, cela signifie que l'utilisateur n'a pas de liste de courses
-    if (error.response && error.response.status === 404) {
+    if (error instanceof Error && error.message.includes("404")) {
       console.log(
         "L'utilisateur n'a pas de liste de courses, retour d'une liste vide"
       );
       return { shoppingList: [] };
+    }if (error instanceof Error) {
+      console.log("Erreur inconnue:", error.message); 
     }
 
     return { shoppingList: [] };
@@ -69,13 +71,25 @@ async function stockLoader() {
 
     console.log("Stock chargé:", response.data);
     return { stockItems: response.data.data || [] };
-  } catch (error: any) {
+  } catch (error) {
     console.error("Erreur lors du chargement du stock:", error);
 
     // Si l'erreur est 404, cela signifie que l'utilisateur n'a pas de produits
-    if (error.response && error.response.status === 404) {
+    if (error instanceof Error && error.message.includes("404")) {
       console.log("L'utilisateur n'a pas de produits, retour d'une liste vide");
       return { stockItems: [] };
+    }
+
+
+    if (error instanceof Error) {
+      console.log("Erreur inconnue:", error.message);
+    }
+
+
+    console.error("Erreur non gérée:", error);
+
+    if (error instanceof Error) {
+      console.log("Erreur inconnue:", error.message);
     }
 
     return { stockItems: [] };
@@ -154,10 +168,15 @@ const router = createBrowserRouter([
   },
 ]);
 
-ReactDOM.createRoot(document.getElementById("root")!).render(
-  <React.StrictMode>
-    <AuthProvider>
-      <RouterProvider router={router} />
-    </AuthProvider>
-  </React.StrictMode>
-);
+const rootElement = document.getElementById("root");
+if (rootElement) {
+  ReactDOM.createRoot(rootElement).render(
+    <React.StrictMode>
+      <AuthProvider>
+        <RouterProvider router={router} />
+      </AuthProvider>
+    </React.StrictMode>
+  );
+} else {
+  console.error("Root element not found");
+}

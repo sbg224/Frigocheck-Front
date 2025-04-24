@@ -72,7 +72,7 @@ export const getUserId = () => {
   
   // Sinon, essayer d'extraire l'ID depuis le token JWT
   const userInfo = getUserFromToken();
-  if (userInfo && userInfo.id) {
+  if (userInfo?.id) {
     console.log("ID utilisateur extrait du token JWT:", userInfo.id);
     // Stocker l'ID dans le localStorage pour les prochaines fois
     localStorage.setItem(USER_ID_KEY, userInfo.id.toString());
@@ -120,7 +120,7 @@ export const setAuthInfo = (token: string, userId: string) => {
     } else {
       // Si l'ID n'est pas fourni, essayer de l'extraire du token
       const userInfo = getUserFromToken();
-      if (userInfo && userInfo.id) {
+      if (userInfo?.id) {
         console.log("ID utilisateur extrait du token:", userInfo.id);
         localStorage.setItem(USER_ID_KEY, userInfo.id.toString());
       } else {
